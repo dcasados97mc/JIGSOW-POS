@@ -1,0 +1,45 @@
+YAML
+
+name: Compilar JIGSOW POS APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Extraer proyecto Android
+        run: |
+          unzip -o JIGSOW_POS_APK_CLOUD_BUILD.zip -d proyecto
+          find proyecto -name settings.gradle -type f
+
+      - name: Compilar APK
+        run: |
+          PROJECT_DIR="$(dirname "$(find proyecto -name settings.gradle -type f | head -n 1)")"
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JIGSOW-POS-APK
+          path: proyecto/**/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
